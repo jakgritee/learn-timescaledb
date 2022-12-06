@@ -5,7 +5,8 @@ The purpose of this repository is to learn how to work with time-series data in 
 ```
 docker-compose --env-file config/.env up -d
 ```
-**Step 1:** Connect to postgres and create database
+**Step 1:** Connect to postgres and create database  
+
 ```
 psql -U jakgrits -h localhost -d postgres
 ```
@@ -28,7 +29,8 @@ SET timezone = 'Etc/UTC';
 ```sql
 SELECT now();
 ```
-**Step 2:** Create a regular PostgreSQL table
+**Step 2:** Create a regular PostgreSQL table  
+
 ```sql
 CREATE TABLE stocks_real_time(
 time TIMESTAMPTZ NOT NULL,
@@ -44,17 +46,20 @@ name TEXT NOT NULL
 );
 ```
 
-**Step 3:** Convert the regular table into a hypertable partitioned on the `time` column
+**Step 3:** Convert the regular table into a hypertable partitioned on the `time` column  
+
 ```sql
 SELECT create_hypertable('stocks_real_time', 'time');
 ```
 
-**Step 4:** Create an index to support efficient queries on the `symbol` and `time` columns
+**Step 4:** Create an index to support efficient queries on the `symbol` and `time` columns  
+
 ```sql
 CREATE INDEX ix_symbol_time ON stocks_real_time (symbol, time DESC);
 ```
 
 **Step 5:** Add time-series data  
+
 ```sql
 COPY stocks_real_time FROM '/var/lib/postgresql/data/stock/tutorial_sample_tick.csv' DELIMITER ',' CSV HEADER;
 ```
@@ -63,6 +68,7 @@ COPY company FROM '/var/lib/postgresql/data/stock/tutorial_sample_company.csv' D
 ```
 
 **Step 6:** Query your data  
+
 Select the most recent 10 trades for Amazon in order
 ```sql
 SELECT * FROM stocks_real_time srt
