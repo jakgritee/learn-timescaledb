@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  timescaledb:
+    image: timescale/timescaledb-ha:pg14-latest
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./timescaledb:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "jakgrits"]
+      interval: 5s
+      retries: 5
+    networks:
+      - network
+
+  pgadmin4:
+    image: dpage/pgadmin4
+    restart: always
+    ports:
+      - 80:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "jakgrits"]
+      interval: 5s
+      retries: 5
+    depends_on:
+      - timescaledb
+    networks:
+      - network
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: always
+    ports:
+      - 3000:3000
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+    volumes:
+      - ./grafana:/var/lib/grafana
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "jakgrits"]
+      interval: 5s
+      retries: 5
+    depends_on:
+      - timescaledb
+    networks:
+      - network
+
+networks:
+  network:
