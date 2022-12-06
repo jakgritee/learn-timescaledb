@@ -90,8 +90,7 @@ SELECT symbol, first(price, time), last(price, time)
 FROM stocks_real_time srt
 WHERE time > (make_timestamp(2022, 12, 3, 0, 0, 0) - INTERVAL '4 days')
 GROUP BY symbol
-ORDER BY symbol
-LIMIT 5;
+ORDER BY symbol;
 ```
 Aggregate by an arbitrary length of time
 ```sql
@@ -101,12 +100,100 @@ FROM stocks_real_time srt
 WHERE time > (make_timestamp(2022, 12, 3, 0, 0, 0) - INTERVAL '1 week')
 GROUP BY bucket, symbol
 ORDER BY bucket, symbol
-LIMIT 5;
+```
+
+**Step 7:** Create a continuous aggregate  
+
+Query high, low, open, close price (without continuous aggregate)
+```sql
+SELECT
+  time_bucket('1 day', "time") AS day,
+  symbol,
+  max(price) AS high,
+  first(price, time) AS open,
+  last(price, time) AS close,
+  min(price) AS low
+FROM stocks_real_time srt
+GROUP BY day, symbol
+ORDER BY day DESC, symbol;
+```
+
+Query high, low, open, close price (with continuous aggregate)
+```sql
+CREATE MATERIALIZED VIEW stock_candlestick_daily
+WITH (timescaledb.continuous) AS
+SELECT
+  time_bucket('1 day', "time") AS day,
+  symbol,
+  max(price) AS high,
+  first(price, time) AS open,
+  last(price, time) AS close,
+  min(price) AS low
+FROM stocks_real_time srt
+GROUP BY day, symbol;
+```
+```sql
+SELECT * FROM stock_candlestick_daily
+  ORDER BY day DESC, symbol;
+```
+
+Create a continuous aggregate refresh policy  
+
+(Automatic)  
+
+```sql
+SELECT add_continuous_aggregate_policy('stock_candlestick_daily',
+  start_offset => INTERVAL '3 days',
+  end_offset => INTERVAL '1 hour',
+  schedule_interval => INTERVAL '1 days');
+```
+(Manual)  
+```sql
+CALL refresh_continuous_aggregate(
+  'stock_candlestick_daily',
+  now() - INTERVAL '1 week',
+  now()
+);
+```
+**Step 8:** Save space with compression  
+
+Enable TimescaleDB compression on the hypertable
+```sql
+ALTER TABLE stocks_real_time SET (
+  timescaledb.compress,
+  timescaledb.compress_orderby = 'time DESC',
+  timescaledb.compress_segmentby = 'symbol'
+);
+```
+
+Verify the compression settings
+```sql
+SELECT * FROM timescaledb_information.compression_settings;
+```
+
+Automatic compression
+```sql
+SELECT add_compression_policy('stocks_real_time', INTERVAL '2 weeks');
+```
+
+Verify your compression
+```sql
+SELECT pg_size_pretty(before_compression_total_bytes) as "before compression",
+  pg_size_pretty(after_compression_total_bytes) as "after compression"
+  FROM hypertable_compression_stats('stocks_real_time');
+```
+
+**Step 9:** Learn about data retention  
+
+Create an automated data retention policy 
+```sql
+SELECT add_retention_policy('stocks_real_time', INTERVAL '3 weeks');
+```
+
+See information about retention policy and others
+```sql
+SELECT * FROM timescaledb_information.jobs;
 ```
 
 ## Section 2: Tutorials (NYC taxi)
-```sql
-```
-
-
 
