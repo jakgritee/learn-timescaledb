@@ -69,7 +69,7 @@ COPY company FROM '/var/lib/postgresql/data/stock/tutorial_sample_company.csv' D
 
 **Step 6:** Query your data  
 
-Select the most recent 10 trades for Amazon in order
+Select the most recent 5 trades for Amazon in order
 ```sql
 SELECT * FROM stocks_real_time srt
 WHERE symbol='MSFT'
@@ -196,4 +196,3 @@ SELECT * FROM timescaledb_information.jobs;
 ```
 
 ## Section 2: Tutorials (NYC taxi)
-
