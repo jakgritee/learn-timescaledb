@@ -99,7 +99,7 @@ SELECT
 FROM stocks_real_time srt
 WHERE time > (make_timestamp(2022, 12, 3, 0, 0, 0) - INTERVAL '1 week')
 GROUP BY bucket, symbol
-ORDER BY bucket, symbol
+ORDER BY bucket, symbol;
 ```
 
 **Step 7:** Create a continuous aggregate  
